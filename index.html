@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Target 5 Juta</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#050505;color:#fff;min-height:100vh;overflow-x:hidden}
+.money{position:fixed;top:-50px;color:rgba(0,255,120,.15);pointer-events:none;animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(110vh)}}
+.center{display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.card{width:100%;max-width:520px;background:rgba(255,255,255,.05);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:24px}
+.hidden{display:none}
+input{width:100%;padding:12px;border:none;border-radius:12px;background:#111;color:#fff;margin-top:10px}
+button{border:none;border-radius:12px;padding:12px;cursor:pointer;font-weight:700}
+.login-btn,.add{background:#00ff88}
+.minus{background:#ff5252;color:#fff}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.quick button{background:#181818;color:#fff}
+.amount{text-align:center;font-size:34px;color:#00ff88;margin:16px 0}
+.progress-wrap{height:18px;background:#222;border-radius:999px;overflow:hidden}
+.progress{height:100%;width:0;background:linear-gradient(90deg,#00ff88,#00c853)}
+.stats{display:flex;justify-content:space-between;margin-top:8px;font-size:14px}
+.actions{display:flex;gap:10px;margin-top:12px}
+.actions button{flex:1}
+.box{background:#111;padding:14px;border-radius:14px;margin-top:14px}
+.level,.streak{text-align:center;margin-top:12px}
+.logout{width:100%;margin-top:14px;background:#333;color:#fff}
+h1,h2{text-align:center}
+</style>
+</head>
+<body>
+
+<div id="loginPage" class="center">
+<div class="card">
+<h2>🔒 Login</h2>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+<button class="login-btn" onclick="login()">Masuk</button>
+</div>
+</div>
+
+<div id="app" class="hidden">
+<div class="center">
+<div class="card">
+<h1>💰 TARGET 5 JUTA</h1>
+<div class="amount" id="saldo">Rp0</div>
+
+<div class="progress-wrap"><div class="progress" id="progress"></div></div>
+<div class="stats">
+<span id="percent">0%</span>
+<span id="remain">Sisa Rp5.000.000</span>
+</div>
+
+<div class="quick">
+<button onclick="quickAdd(50000)">50.000</button>
+<button onclick="quickAdd(100000)">100.000</button>
+<button onclick="quickAdd(200000)">200.000</button>
+<button onclick="quickAdd(300000)">300.000</button>
+</div>
+
+<input id="customAmount" type="text" placeholder="Contoh: 200.000" oninput="formatInput(this)">
+
+<div class="actions">
+<button class="add" onclick="addCustom()">➕ Tambah</button>
+<button class="minus" onclick="removeCustom()">➖ Kurangi</button>
+</div>
+
+<div class="level" id="level">🥉 BRONZE</div>
+<div class="streak" id="streak">🔥 Streak 0 Hari</div>
+
+<div class="box" id="motivation">Mulai hari ini. 5 juta dimulai dari rupiah pertama.</div>
+
+<div class="box">
+<h3>🏆 Achievement</h3>
+<div id="achievement"></div>
+</div>
+
+<button class="logout" onclick="logout()">Logout</button>
+</div>
+</div>
+</div>
+
+<script>
+const TARGET=5000000;
+const USERNAME="admin";
+const PASSWORD="123456";
+let saldo=Number(localStorage.getItem("saldo"))||0;
+
+function login(){
+ const u=username.value,p=password.value;
+ if(u===USERNAME&&p===PASSWORD){
+  localStorage.setItem("login","yes");
+  showApp();
+ } else alert("Login gagal");
+}
+function logout(){localStorage.removeItem("login");location.reload();}
+function showApp(){loginPage.classList.add("hidden");app.classList.remove("hidden");updateUI();}
+if(localStorage.getItem("login")==="yes") showApp();
+
+function rupiah(x){return "Rp"+x.toLocaleString("id-ID");}
+function formatInput(input){
+ let v=input.value.replace(/\D/g,'');
+ input.value=v.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function getNominal(){return Number(customAmount.value.replace(/\./g,''));}
+
+function saveActivity(){
+ const today=new Date().toDateString();
+ let streak=Number(localStorage.getItem("streak"))||0;
+ let last=localStorage.getItem("lastDay");
+ if(last!==today){streak++;localStorage.setItem("streak",streak);}
+ localStorage.setItem("lastDay",today);
+}
+
+function quickAdd(n){saldo+=n;saveActivity();updateUI();}
+function addCustom(){
+ let n=getNominal(); if(!n) return;
+ saldo+=n; saveActivity(); updateUI(); customAmount.value="";
+}
+function removeCustom(){
+ let n=getNominal(); if(!n) return;
+ saldo=Math.max(0,saldo-n); updateUI(); customAmount.value="";
+}
+
+function updateUI(){
+ localStorage.setItem("saldo",saldo);
+ let percent=Math.min((saldo/TARGET)*100,100);
+ document.getElementById("saldo").innerText=rupiah(saldo);
+ document.getElementById("progress").style.width=percent+"%";
+ document.getElementById("percent").innerText=percent.toFixed(1)+"%";
+ document.getElementById("remain").innerText="Sisa "+rupiah(Math.max(0,TARGET-saldo));
+
+ let level="🥉 BRONZE";
+ if(percent>=25) level="🥈 SILVER";
+ if(percent>=50) level="🥇 GOLD";
+ if(percent>=75) level="💎 DIAMOND";
+ if(percent>=100) level="🏆 SELESAI";
+ document.getElementById("level").innerText=level;
+
+ document.getElementById("streak").innerText="🔥 Streak "+(localStorage.getItem("streak")||0)+" Hari";
+
+ let m="Awal memang berat. Tetap konsisten.";
+ if(percent>=50) m="Setengah jalan! Jangan menyerah.";
+ if(percent>=75) m="Sedikit lagi menuju 5 juta!";
+ if(percent>=100) m="🎉 Selamat target tercapai!";
+ document.getElementById("motivation").innerText=m;
+
+ document.getElementById("achievement").innerHTML=`
+ ${saldo>0?'✅':'⬜'} Nabung Pertama<br>
+ ${saldo>=1000000?'✅':'⬜'} Tembus 1 Juta<br>
+ ${saldo>=3000000?'✅':'⬜'} Tembus 3 Juta<br>
+ ${saldo>=5000000?'✅':'⬜'} Tembus 5 Juta`;
+}
+
+function createMoney(){
+ let el=document.createElement("div");
+ el.className="money";
+ el.innerHTML="💵";
+ el.style.left=Math.random()*100+"vw";
+ el.style.fontSize=(15+Math.random()*25)+"px";
+ el.style.animationDuration=(5+Math.random()*10)+"s";
+ document.body.appendChild(el);
+ setTimeout(()=>el.remove(),15000);
+}
+setInterval(createMoney,250);
+updateUI();
+</script>
+</body>
+</html>
